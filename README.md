@@ -71,10 +71,10 @@ erDiagram
         string target_orbit_name
         float target_inclination_deg
         float target_altitude_km
-        bool has_propulsion
-        bool hazardous_materials
-        bool needs_early_deploy
-        bool itar_controlled
+        string has_propulsion_answer "yes/no/unsure"
+        string hazardous_materials_answer "yes/no/unsure"
+        string needs_early_deploy_answer "yes/no/unsure"
+        string itar_controlled_answer "yes/no/unsure"
         string licensing_status
         string status
         string tracking_token UK
@@ -86,6 +86,8 @@ erDiagram
         bigint base_total_cents
         json multipliers
         bigint total_cents
+        datetime expires_at "null = sin expiracion"
+        datetime invalidated_at "null = vigente"
     }
     BOOKINGS {
         uuid id PK
