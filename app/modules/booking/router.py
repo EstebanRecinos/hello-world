@@ -9,7 +9,7 @@ from app.domain.state_machine import InvalidTransitionError
 from app.modules.booking.schemas import BookingOut, BookingRequest, QuoteOut, QuoteRequest
 from app.modules.booking.service import BookingError, BookingService, QuoteNotFoundError
 from app.modules.manifests.schemas import ManifestOut, StateChangeRequest
-from app.modules.manifests.service import ManifestNotFoundError
+from app.modules.manifests.service import IncompleteManifestError, ManifestNotFoundError
 
 router = APIRouter(prefix="/manifests", tags=["booking"])
 
@@ -29,6 +29,11 @@ def create_quote(
         return svc.create_quote(manifest_id, body.launch_window_id, user)
     except ManifestNotFoundError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Manifest not found")
+    except IncompleteManifestError as exc:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            {"message": str(exc), "missing_fields": exc.missing_fields},
+        )
     except InvalidTransitionError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
     except BookingError as exc:

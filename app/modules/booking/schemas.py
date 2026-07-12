@@ -18,6 +18,8 @@ class QuoteOut(BaseModel):
     base_total_cents: int
     multipliers: dict[str, Any]
     total_cents: int
+    expires_at: datetime | None
+    invalidated_at: datetime | None
     created_at: datetime
 
 

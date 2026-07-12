@@ -108,6 +108,9 @@ def seed() -> None:
                 target_inclination_deg=51.6,
                 target_altitude_km=430,
                 has_propulsion=True,
+                # Customer wasn't sure about pressurized components: priced
+                # conservatively and pending ops review (needs_review=true).
+                hazardous_materials="unsure",
                 needs_early_deploy=True,
                 itar_controlled=True,
                 licensing_status=LicensingStatus.PENDING,

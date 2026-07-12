@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     matching_inclination_tolerance_deg: float = 1.5
     matching_altitude_tolerance_km: float = 50.0
 
+    # Quotes: hours until a quote expires; 0 or negative = never expires
+    quote_ttl_hours: int = 72
+
     # Pricing v1 multipliers — configuration, not code
     pricing_urgency_days_threshold: int = 90
     pricing_urgency_multiplier: float = 1.25

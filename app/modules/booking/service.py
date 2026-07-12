@@ -1,14 +1,17 @@
 import uuid
+from datetime import timedelta
 
 from sqlalchemy.orm import Session
 
 from app.auth.security import AuthenticatedUser
+from app.config import get_settings
+from app.domain.events import DomainEvent, event_bus
 from app.domain.state_machine import ManifestState
 from app.modules.booking.models import Booking, BookingStatus, Quote
 from app.modules.booking.repository import BookingRepository
 from app.modules.catalog.models import LaunchWindow, LaunchWindowStatus
 from app.modules.manifests.models import PayloadManifest
-from app.modules.manifests.service import ManifestService
+from app.modules.manifests.service import IncompleteManifestError, ManifestService
 from app.modules.pricing.engine import PricingEngine, get_pricing_engine
 from app.utils import as_utc, utcnow
 
@@ -56,8 +59,11 @@ class BookingService:
         self, manifest_id: uuid.UUID, launch_window_id: uuid.UUID, user: AuthenticatedUser
     ) -> Quote:
         manifest = self.manifests.get_for_user(manifest_id, user)
+        if not manifest.is_complete:
+            raise IncompleteManifestError(manifest.missing_fields)
         window = self._get_bookable_window(launch_window_id)
 
+        ttl_hours = get_settings().quote_ttl_hours
         breakdown = self.pricer.quote(manifest, window)
         quote = Quote(
             manifest_id=manifest.id,
@@ -65,6 +71,7 @@ class BookingService:
             base_total_cents=breakdown.base_total_cents,
             multipliers=breakdown.multipliers,
             total_cents=breakdown.total_cents,
+            expires_at=utcnow() + timedelta(hours=ttl_hours) if ttl_hours > 0 else None,
         )
         self.repo.add_quote(quote)
         self.session.flush()
@@ -90,6 +97,23 @@ class BookingService:
         quote = self.repo.get_quote(quote_id)
         if quote is None or quote.manifest_id != manifest.id:
             raise QuoteNotFoundError("Quote not found for this manifest")
+        if quote.invalidated_at is not None:
+            raise BookingError(
+                "This quote was invalidated by a safety review; request a new quote"
+            )
+        if quote.expires_at is not None and as_utc(quote.expires_at) <= utcnow():
+            # Persist the expiry event even though the booking fails.
+            event_bus.publish(
+                DomainEvent(
+                    event_type="manifest.quote_expired",
+                    actor=user.subject,
+                    manifest_id=manifest.id,
+                    data={"quote_id": str(quote.id), "expired_at": as_utc(quote.expires_at).isoformat()},
+                ),
+                self.session,
+            )
+            self.session.commit()
+            raise BookingError("This quote has expired; request a new quote to see the current price")
 
         # Row lock (Postgres) so concurrent bookings can't oversell capacity.
         window = self._get_bookable_window(quote.launch_window_id, for_update=True)

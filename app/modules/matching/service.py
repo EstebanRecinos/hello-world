@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.security import AuthenticatedUser
 from app.modules.catalog.repository import LaunchWindowRepository
-from app.modules.manifests.service import ManifestService
+from app.modules.manifests.service import IncompleteManifestError, ManifestService
 from app.modules.matching.engine import MatchingEngine, get_matching_engine
 from app.modules.matching.schemas import MatchOut, PriceEstimateOut
 from app.modules.pricing.engine import PricingEngine, get_pricing_engine
@@ -28,6 +28,8 @@ class MatchingService:
         """Compatible windows ranked by (a) orbital score desc, (b) launch
         date asc, (c) price asc — deterministic lexicographic ranking."""
         manifest = self.manifests.get_for_user(manifest_id, user)
+        if not manifest.is_complete:
+            raise IncompleteManifestError(manifest.missing_fields)
         candidates = self.windows.list_open_after(utcnow())
         matches = self.matcher.match(manifest, candidates)
 

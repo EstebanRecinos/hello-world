@@ -1,13 +1,14 @@
 import uuid
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth.security import AuthenticatedUser, Role
 from app.domain.events import DomainEvent, event_bus
 from app.domain.state_machine import ManifestState, validate_transition
-from app.modules.manifests.models import ManifestEvent, PayloadManifest
+from app.modules.manifests.models import ManifestEvent, PayloadManifest, TriState
 from app.modules.manifests.repository import ManifestRepository
-from app.modules.manifests.schemas import ManifestCreate, ManifestUpdate
+from app.modules.manifests.schemas import ManifestCreate, ManifestUpdate, ReviewRequest
 
 
 class ManifestNotFoundError(Exception):
@@ -16,6 +17,22 @@ class ManifestNotFoundError(Exception):
 
 class ManifestNotEditableError(Exception):
     pass
+
+
+class ReviewError(Exception):
+    """Invalid review request (wrong state or field not unsure)."""
+
+
+class IncompleteManifestError(Exception):
+    """The manifest is missing fields required for matching/quoting. Carries
+    the machine-readable list so the wizard can route the user to the right
+    step."""
+
+    def __init__(self, missing_fields: list[str]) -> None:
+        self.missing_fields = missing_fields
+        super().__init__(
+            "Manifest is incomplete; fill these fields first: " + ", ".join(missing_fields)
+        )
 
 
 class ManifestService:
@@ -37,6 +54,8 @@ class ManifestService:
             ),
             self.session,
         )
+        if manifest.needs_review:
+            self._emit_review_requested(manifest, actor=customer_id)
         self.session.commit()
         return manifest
 
@@ -63,6 +82,7 @@ class ManifestService:
             raise ManifestNotEditableError(
                 f"Manifest is {manifest.status!r}; only draft manifests can be edited"
             )
+        unsure_before = set(manifest.unsure_fields)
         changes = data.model_dump(exclude_unset=True)
         for key, value in changes.items():
             setattr(manifest, key, value)
@@ -75,8 +95,80 @@ class ManifestService:
             ),
             self.session,
         )
+        unsure_after = set(manifest.unsure_fields)
+        if unsure_after and unsure_after != unsure_before:
+            self._emit_review_requested(manifest, actor=user.subject)
         self.session.commit()
         return manifest
+
+    def review(
+        self, manifest_id: uuid.UUID, data: ReviewRequest, user: AuthenticatedUser
+    ) -> PayloadManifest:
+        """Ops resolves unsure safety answers to definitive yes/no. Allowed in
+        draft or quoted; resolving while quoted invalidates active quotes so
+        the customer re-quotes at the (possibly lower) correct price — quotes
+        themselves are immutable."""
+        manifest = self.get_for_user(manifest_id, user)
+        if manifest.state not in (ManifestState.DRAFT, ManifestState.QUOTED):
+            raise ReviewError(
+                f"Manifest is {manifest.status!r}; reviews are only allowed in draft or quoted"
+            )
+        unsure = set(manifest.unsure_fields)
+        not_unsure = sorted(set(data.resolutions) - unsure)
+        if not_unsure:
+            raise ReviewError(
+                f"Fields {not_unsure} are not marked unsure; only unsure answers can be resolved"
+            )
+
+        for field, answer in data.resolutions.items():
+            setattr(manifest, f"{field}_answer", answer)
+
+        invalidated: list[str] = []
+        if manifest.state is ManifestState.QUOTED:
+            invalidated = self._invalidate_active_quotes(manifest.id)
+
+        event_bus.publish(
+            DomainEvent(
+                event_type="manifest.review_resolved",
+                actor=user.subject,
+                manifest_id=manifest.id,
+                data={
+                    "resolutions": dict(data.resolutions),
+                    "remaining_unsure": manifest.unsure_fields,
+                    "invalidated_quotes": invalidated,
+                },
+            ),
+            self.session,
+        )
+        self.session.commit()
+        return manifest
+
+    def _invalidate_active_quotes(self, manifest_id: uuid.UUID) -> list[str]:
+        # Local import: booking depends on manifests for transitions; keep the
+        # reverse edge model-only to avoid a service-level cycle.
+        from app.modules.booking.models import Quote
+        from app.utils import utcnow
+
+        quotes = self.session.scalars(
+            select(Quote).where(
+                Quote.manifest_id == manifest_id, Quote.invalidated_at.is_(None)
+            )
+        ).all()
+        now = utcnow()
+        for quote in quotes:
+            quote.invalidated_at = now
+        return [str(q.id) for q in quotes]
+
+    def _emit_review_requested(self, manifest: PayloadManifest, actor: str) -> None:
+        event_bus.publish(
+            DomainEvent(
+                event_type="manifest.review_requested",
+                actor=actor,
+                manifest_id=manifest.id,
+                data={"unsure_fields": manifest.unsure_fields},
+            ),
+            self.session,
+        )
 
     def transition(
         self,
@@ -106,3 +198,13 @@ class ManifestService:
 
     def list_events(self, manifest_id: uuid.UUID) -> list[ManifestEvent]:
         return self.repo.list_events(manifest_id)
+
+
+# Re-exported for callers that need to validate answers.
+__all__ = [
+    "ManifestService",
+    "ManifestNotFoundError",
+    "ManifestNotEditableError",
+    "ReviewError",
+    "TriState",
+]

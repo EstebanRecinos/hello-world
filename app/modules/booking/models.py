@@ -24,6 +24,10 @@ class Quote(Base):
     base_total_cents: Mapped[int] = mapped_column(BigInteger)
     multipliers: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     total_cents: Mapped[int] = mapped_column(BigInteger)
+    # NULL = never expires (pre-expiry quotes keep their original terms).
+    expires_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    # Set when an ops review changes the answers this price was based on.
+    invalidated_at: Mapped[datetime | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
 

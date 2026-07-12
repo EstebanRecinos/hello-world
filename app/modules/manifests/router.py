@@ -3,18 +3,20 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.auth.security import AuthenticatedUser, get_current_user
+from app.auth.security import AuthenticatedUser, get_current_user, require_ops
 from app.database import get_db
 from app.modules.manifests.schemas import (
     ManifestCreate,
     ManifestEventOut,
     ManifestOut,
     ManifestUpdate,
+    ReviewRequest,
 )
 from app.modules.manifests.service import (
     ManifestNotEditableError,
     ManifestNotFoundError,
     ManifestService,
+    ReviewError,
 )
 
 router = APIRouter(prefix="/manifests", tags=["manifests"])
@@ -65,6 +67,22 @@ def update_manifest(
     except ManifestNotFoundError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Manifest not found")
     except ManifestNotEditableError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
+
+
+@router.post("/{manifest_id}/review", response_model=ManifestOut)
+def review_manifest(
+    manifest_id: uuid.UUID,
+    body: ReviewRequest,
+    svc: ManifestService = Depends(_service),
+    user: AuthenticatedUser = Depends(require_ops),
+) -> ManifestOut:
+    """Ops resolves 'unsure' safety answers to definitive yes/no."""
+    try:
+        return svc.review(manifest_id, body, user)
+    except ManifestNotFoundError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Manifest not found")
+    except ReviewError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
 
 

@@ -144,6 +144,28 @@ stateDiagram-v2
 - **Matching** (`app/modules/matching/engine.py`): protocolo `MatchingEngine`; la v1 compara inclinación ±1.5° y altitud ±50 km (tolerancias en config) y verifica capacidad restante. La interfaz recibe el manifiesto completo y las ventanas candidatas, de modo que un motor de delta-v de transferencia se conecta sin tocar a los llamadores. Ranking determinista: score orbital desc → fecha asc → precio asc.
 - **Pricing** (`app/modules/pricing/engine.py`): protocolo `PricingEngine`; la v1 aplica `tarifa base × kg × multiplicadores`. Los multiplicadores (urgencia, volumen atípico por baja densidad, riesgo regulatorio por hazmat/licencias/ITAR) viven en variables de entorno, no en código.
 
+## Soporte para el wizard del frontend (v0.2)
+
+Tres capacidades pensadas para que cualquier persona complete el registro sin conocimientos técnicos, manteniendo `/api/v1` retrocompatible:
+
+- **Respuestas tri-estado en seguridad.** `has_propulsion`, `hazardous_materials`, `needs_early_deploy` e `itar_controlled` aceptan `"yes" / "no" / "unsure"` (los booleanos siguen funcionando: `true→yes`). Un `"unsure"` se cobra conservadoramente (como `yes`), marca `needs_review: true` y emite `manifest.review_requested`. Ops lo resuelve con `POST /manifests/{id}/review` (`{"resolutions": {"hazardous_materials": "no"}}`); si el manifiesto estaba `quoted`, la cotización vigente queda invalidada (las quotes son inmutables) y el cliente re-cotiza al precio correcto — emite `manifest.review_resolved`.
+- **Borradores parciales.** `POST /manifests` solo exige `name`; el wizard guarda progreso servidor a servidor. La respuesta incluye `is_complete` y `missing_fields`. Cotizar o matchear un manifiesto incompleto responde 409 con `{"missing_fields": [...]}` legible por máquina.
+- **Expiración de cotizaciones.** Las quotes llevan `expires_at` (TTL `ORBITA_QUOTE_TTL_HOURS`, default 72 h; ≤0 = sin expiración). Reservar una quote expirada responde 409 y emite `manifest.quote_expired`; re-cotizar es la recuperación. Las quotes previas a la migración quedan sin expiración.
+
+```bash
+# Borrador con solo el nombre
+curl -s -X POST $BASE/manifests -H "Authorization: Bearer $CUST" \
+  -H 'Content-Type: application/json' -d '{"name": "Mi primer satélite"}'
+
+# Respuesta de seguridad "no estoy seguro"
+curl -s -X PATCH $BASE/manifests/$MID -H "Authorization: Bearer $CUST" \
+  -H 'Content-Type: application/json' -d '{"hazardous_materials": "unsure"}'
+
+# Ops resuelve la duda (invalida la quote vigente si existe)
+curl -s -X POST $BASE/manifests/$MID/review -H "Authorization: Bearer $OPS" \
+  -H 'Content-Type: application/json' -d '{"resolutions": {"hazardous_materials": "no"}}'
+```
+
 ## Flujo completo con curl
 
 ```bash
@@ -189,13 +211,12 @@ curl -s $BASE/tracking/$TOKEN
 ## Deudas técnicas asumidas
 
 1. **Concurrencia de reservas**: la sobreventa se previene con `SELECT ... FOR UPDATE` sobre la ventana al reservar; suficiente en el monolito, pero al extraer booking a servicio propio hará falta reserva de capacidad con expiración (hold + confirm) en lugar de lock de fila.
-2. **Cotizaciones sin expiración**: una quote puede reservarse días después al precio viejo. Falta `expires_at` y re-validación de precio al reservar.
-3. **Event log como única proyección**: el bus de eventos es síncrono e in-process; no hay outbox ni redelivery. Antes de integrar notificaciones o sistemas físicos hay que pasar a transactional outbox + broker.
-4. **Auth mínima**: el emisor dev de JWT no valida identidad; no hay refresh tokens ni revocación. El diseño ya delega la emisión a un IdP (la app solo verifica), pero falta la integración real (JWKS, issuer/audience).
-5. **Matching v1 ingenuo**: tolerancia plana de inclinación/altitud; ignora RAAN, ventanas de fase y capacidad de propulsión del propio payload para cerrar el gap orbital. La interfaz ya lo contempla (recibe el manifiesto completo).
-6. **Masas y volúmenes en float**: el dinero es entero (centavos), pero kg/m³ usan float; para facturación fina convendría `Numeric`.
-7. **Tipos portables SQLite/Postgres**: para que los tests corran en SQLite se usan `JSON`/`Uuid` genéricos en vez de `JSONB`/índices GIN de Postgres.
-8. **Sin paginación** en listados; irrelevante con volúmenes MVP.
+2. **Event log como única proyección**: el bus de eventos es síncrono e in-process; no hay outbox ni redelivery. Antes de integrar notificaciones o sistemas físicos hay que pasar a transactional outbox + broker.
+3. **Auth mínima**: el emisor dev de JWT no valida identidad; no hay refresh tokens ni revocación. El diseño ya delega la emisión a un IdP (la app solo verifica), pero falta la integración real (JWKS, issuer/audience).
+4. **Matching v1 ingenuo**: tolerancia plana de inclinación/altitud; ignora RAAN, ventanas de fase y capacidad de propulsión del propio payload para cerrar el gap orbital. La interfaz ya lo contempla (recibe el manifiesto completo).
+5. **Masas y volúmenes en float**: el dinero es entero (centavos), pero kg/m³ usan float; para facturación fina convendría `Numeric`.
+6. **Tipos portables SQLite/Postgres**: para que los tests corran en SQLite se usan `JSON`/`Uuid` genéricos en vez de `JSONB`/índices GIN de Postgres.
+7. **Sin paginación** en listados; irrelevante con volúmenes MVP.
 
 ### Primer módulo a extraer como microservicio: `matching`
 
