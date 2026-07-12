@@ -1,4 +1,7 @@
+from pathlib import Path
+
 from fastapi import APIRouter, FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app.auth.router import router as auth_router
 from app.modules.booking.router import router as booking_router
@@ -31,6 +34,12 @@ def create_app() -> FastAPI:
     @app.get("/health", tags=["ops"])
     def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    # Customer web portal (static SPA). Mounted last so /api/v1, /docs and
+    # /health keep precedence.
+    web_dir = Path(__file__).resolve().parent.parent / "web"
+    if web_dir.is_dir():
+        app.mount("/", StaticFiles(directory=web_dir, html=True), name="web")
 
     return app
 

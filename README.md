@@ -168,6 +168,17 @@ curl -s -X POST $BASE/manifests/$MID/review -H "Authorization: Bearer $OPS" \
   -H 'Content-Type: application/json' -d '{"resolutions": {"hazardous_materials": "no"}}'
 ```
 
+## Portal web del cliente (`web/`)
+
+SPA sin framework (HTML + CSS + JS vanilla) servida por el propio FastAPI en `/` — `/api/v1`, `/docs` y `/health` mantienen precedencia. Diseñada para que cualquier persona de 12 a 99 años complete el flujo sin conocimientos aeroespaciales:
+
+- **Wizard de 6 pasos, una decisión por pantalla** (nombre → peso/medidas → destino → seguridad → permisos → revisión), con barra de progreso y guardado automático en el servidor desde el paso 1 (borradores parciales del backend).
+- **Lenguaje llano:** el destino se elige con tarjetas ("🌍 Cerca de la Tierra", "📷 Para tomar fotos de la Tierra") que fijan órbitas típicas, con modo avanzado plegado; las preguntas de seguridad ofrecen "No estoy segura/o" (tri-estado real del backend); los precios se desglosan en palabras y el score orbital vive bajo "Ver detalles técnicos".
+- **Accesibilidad WCAG 2.2 AA verificada:** Lighthouse accesibilidad **100/100** (vistas de entrada y tracking), flujo completable solo con teclado (verificado con Playwright), foco visible, objetivos ≥44 px, contraste ≥4.5:1 medido por par de colores, tema claro/oscuro por tokens, `prefers-reduced-motion`.
+- **Tracking público en palabras** ("Tu carga ya está dentro del cohete") con los hitos futuros visibles y los detalles técnicos plegados.
+
+Decisiones de diseño: la "sesión" usa el emisor dev de tokens (se reemplaza por cuentas/IdP en la fase de publicación); los errores 409 del backend se traducen a acciones ("Ese precio ya venció. Te mostramos las opciones con el precio de hoy") y `missing_fields` lleva al usuario directo al paso que le falta.
+
 ## Flujo completo con curl
 
 ```bash

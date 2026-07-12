@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>ORBITA-LINK — Envía tu carga al espacio</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Saltar al contenido</a>
+  <header class="topbar">
+    <a href="#/cargas" class="wordmark">ORBITA<b>—</b>LINK</a>
+    <nav aria-label="Principal">
+      <span id="userchip" class="userchip" hidden></span>
+      <button id="logout" class="linkbtn" hidden>Salir</button>
+    </nav>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <!-- Views are rendered here by app.js -->
+    <div id="view" aria-live="polite"></div>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <footer class="foot">
+    <p>ORBITA-LINK · Versión de prueba · <a href="/docs">API para desarrolladores</a></p>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>
