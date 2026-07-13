@@ -25,3 +25,6 @@ packages = ["app"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Put the repo root on sys.path so `from tests.conftest import ...` resolves
+# whether pytest runs as `pytest` (console script) or `python -m pytest`.
+pythonpath = ["."]
