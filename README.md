@@ -146,6 +146,31 @@ stateDiagram-v2
 - **Matching** (`app/modules/matching/engine.py`): protocolo `MatchingEngine`; la v1 compara inclinación ±1.5° y altitud ±50 km (tolerancias en config) y verifica capacidad restante. La interfaz recibe el manifiesto completo y las ventanas candidatas, de modo que un motor de delta-v de transferencia se conecta sin tocar a los llamadores. Ranking determinista: score orbital desc → fecha asc → precio asc.
 - **Pricing** (`app/modules/pricing/engine.py`): protocolo `PricingEngine`; la v1 aplica `tarifa base × kg × multiplicadores`. Los multiplicadores (urgencia, volumen atípico por baja densidad, riesgo regulatorio por hazmat/licencias/ITAR) viven en variables de entorno, no en código.
 
+## Cuentas de usuario (v0.3)
+
+Cuentas reales con email + contraseña, primer paso hacia la publicación en internet. El módulo `accounts` reemplaza al emisor dev de tokens: emite los mismos JWT (`sub` = id de la cuenta, `role`) que el resto del sistema ya verifica, así nada del núcleo cambia. Endpoints bajo `/api/v1/accounts/`:
+
+- `POST /register` — crea la cuenta (contraseña con hash PBKDF2-SHA256, sin dependencias externas) y envía correo de verificación. `409` si el email ya existe.
+- `POST /verify` — confirma el email con el token de un solo uso del correo. Login antes de verificar → `403`.
+- `POST /login` — devuelve el JWT. Lockout progresivo: tras `ORBITA_ACCOUNT_MAX_FAILED_LOGINS` intentos fallidos la cuenta se bloquea `ORBITA_ACCOUNT_LOCKOUT_MINUTES` y responde `429`. Email o contraseña incorrectos dan el mismo mensaje (sin enumeración de cuentas).
+- `POST /request-reset` — siempre responde genérico (no revela si el email existe); si existe, envía enlace de un solo uso.
+- `POST /reset` — fija la contraseña nueva con el token y limpia cualquier bloqueo.
+
+Los tokens de verificación/reset se guardan **hasheados** con expiración configurable; el texto plano solo viaja en el enlace del correo. Cada evento de cuenta (`account.registered`, `account.verified`, `account.login`, `account.login_failed`, `account.reset_*`) queda en el event log append-only por el mismo bus del núcleo. El correo se entrega por un backend abstraído (`ORBITA_EMAIL_BACKEND=console` en dev — imprime el mensaje; `smtp` en producción, vía stdlib). Los usuarios `ops` no se registran por la web: se crean en el seed (`ops@orbita.link`).
+
+```bash
+# Registrar (el enlace de verificación se imprime en consola en dev)
+curl -s -X POST $BASE/accounts/register -H 'Content-Type: application/json' \
+  -d '{"email":"maria@agrosat.gt","display_name":"María","password":"micontrasena123"}'
+# Confirmar el email con el token del enlace
+curl -s -X POST $BASE/accounts/verify -H 'Content-Type: application/json' -d '{"token":"<token>"}'
+# Iniciar sesión y usar el JWT como en el resto del flujo
+curl -s -X POST $BASE/accounts/login -H 'Content-Type: application/json' \
+  -d '{"email":"maria@agrosat.gt","password":"micontrasena123"}'
+```
+
+> Nota: `ORBITA_ENABLE_DEV_AUTH` sigue en `true` por defecto (para tests y desarrollo local); producción lo pone en `false`. El portal web todavía usa el emisor dev; conectarlo a `/accounts/*` es el siguiente incremento.
+
 ## Soporte para el wizard del frontend (v0.2)
 
 Tres capacidades pensadas para que cualquier persona complete el registro sin conocimientos técnicos, manteniendo `/api/v1` retrocompatible:

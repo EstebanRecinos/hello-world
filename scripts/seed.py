@@ -10,6 +10,8 @@ from datetime import timedelta
 from sqlalchemy import select
 
 from app.database import SessionLocal
+from app.modules.accounts.hashing import hash_password
+from app.modules.accounts.models import User
 from app.modules.catalog.models import LaunchWindow
 from app.modules.manifests.models import LicensingStatus, PayloadManifest
 from app.utils import utcnow
@@ -127,9 +129,29 @@ def seed() -> None:
             ),
         ]
         session.add_all(manifests)
+
+        # Verified accounts so a seeded DB is immediately usable via /accounts/login.
+        users = [
+            User(
+                email="ops@orbita.link",
+                display_name="Operaciones ORBITA",
+                password_hash=hash_password("ops-demo-pass"),
+                role="ops",
+                email_verified=True,
+            ),
+            User(
+                email="cliente@orbita.link",
+                display_name="Cliente Demo",
+                password_hash=hash_password("cliente-demo-pass"),
+                role="customer",
+                email_verified=True,
+            ),
+        ]
+        session.add_all(users)
         session.commit()
 
-        print(f"Seeded {len(windows)} launch windows and {len(manifests)} payload manifests.")
+        print(f"Seeded {len(windows)} launch windows, {len(manifests)} payload manifests "
+              f"and {len(users)} users (ops@orbita.link / cliente@orbita.link).")
         for m in manifests:
             print(f"  {m.name}: tracking token = {m.tracking_token}")
     finally:

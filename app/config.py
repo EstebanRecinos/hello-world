@@ -14,7 +14,27 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-secret-change-me"
     jwt_algorithm: str = "HS256"
     jwt_ttl_minutes: int = 60
+    # Dev token issuer. Leave true for local/tests; production sets it false
+    # once real accounts (or an external IdP) issue the JWTs.
     enable_dev_auth: bool = True
+
+    # Accounts: password hashing and single-use token lifetimes.
+    account_pbkdf2_iterations: int = 240_000
+    account_verify_ttl_hours: int = 24
+    account_reset_ttl_hours: int = 1
+    account_max_failed_logins: int = 5
+    account_lockout_minutes: int = 15
+    # Base URL the app builds verification / reset links against.
+    public_base_url: str = "http://localhost:8000"
+
+    # Email delivery. backend="console" logs the message (dev); "smtp" sends it.
+    email_backend: str = "console"
+    email_from: str = "ORBITA-LINK <no-reply@orbita.link>"
+    smtp_host: str = "localhost"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_starttls: bool = True
 
     # Matching v1 tolerances
     matching_inclination_tolerance_deg: float = 1.5

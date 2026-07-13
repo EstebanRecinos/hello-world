@@ -7,6 +7,7 @@ from app.config import get_settings
 from app.database import Base
 
 # Import all model modules so Base.metadata is complete for autogenerate.
+from app.modules.accounts import models as accounts_models  # noqa: F401
 from app.modules.booking import models as booking_models  # noqa: F401
 from app.modules.catalog import models as catalog_models  # noqa: F401
 from app.modules.manifests import models as manifests_models  # noqa: F401

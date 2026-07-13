@@ -4,6 +4,7 @@ from fastapi import APIRouter, FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.auth.router import router as auth_router
+from app.modules.accounts.router import router as accounts_router
 from app.modules.booking.router import router as booking_router
 from app.modules.catalog.router import router as catalog_router
 from app.modules.manifests import event_log
@@ -24,6 +25,7 @@ def create_app() -> FastAPI:
 
     api_v1 = APIRouter(prefix="/api/v1")
     api_v1.include_router(auth_router)
+    api_v1.include_router(accounts_router)
     api_v1.include_router(catalog_router)
     api_v1.include_router(manifests_router)
     api_v1.include_router(matching_router)

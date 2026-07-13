@@ -2,6 +2,9 @@ import os
 
 os.environ.setdefault("ORBITA_DATABASE_URL", "sqlite:///:memory:")
 os.environ.setdefault("ORBITA_JWT_SECRET", "test-secret")
+# Keep password hashing cheap and lockout quick to trigger in tests.
+os.environ.setdefault("ORBITA_ACCOUNT_PBKDF2_ITERATIONS", "1000")
+os.environ.setdefault("ORBITA_ACCOUNT_MAX_FAILED_LOGINS", "3")
 
 from datetime import timedelta  # noqa: E402
 
