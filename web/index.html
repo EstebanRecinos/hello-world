@@ -4,13 +4,25 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#F4F6FA" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0D1526" media="(prefers-color-scheme: dark)">
   <title>ORBITA-LINK — Envía tu carga al espacio</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/img/icon-192.png">
+  <link rel="stylesheet" href="/tokens.css">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <a class="skip-link" href="#main">Saltar al contenido</a>
   <header class="topbar">
-    <a href="#/cargas" class="wordmark">ORBITA<b>—</b>LINK</a>
+    <a href="#/cargas" class="wordmark">
+      <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M 48.97 15.03 A 24 24 0 1 0 56 32" fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round"/>
+        <circle cx="55.9" cy="21.4" r="6.5" fill="var(--accent)"/>
+      </svg>
+      ORBITA<b>—</b>LINK
+    </a>
     <nav aria-label="Principal">
       <span id="userchip" class="userchip" hidden></span>
       <button id="logout" class="linkbtn" hidden>Salir</button>
@@ -18,14 +30,19 @@
   </header>
 
   <main id="main" tabindex="-1">
-    <!-- Views are rendered here by app.js -->
     <div id="view" aria-live="polite"></div>
   </main>
+
+  <div id="install-banner" class="install-banner" hidden>
+    <span>Añade ORBITA-LINK a tu pantalla de inicio para seguir tu carga.</span>
+    <button id="install-yes" class="btn" type="button">Añadir</button>
+    <button id="install-no" class="linkbtn" type="button">Ahora no</button>
+  </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <footer class="foot">
-    <p>ORBITA-LINK · Versión de prueba · <a href="/docs">API para desarrolladores</a></p>
+    <p>ORBITA-LINK · Versión de prueba · <a href="/design/">Sistema de diseño</a> · <a href="/docs">API para desarrolladores</a></p>
   </footer>
 
   <script src="/app.js"></script>

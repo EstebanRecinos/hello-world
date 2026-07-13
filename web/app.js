@@ -49,11 +49,49 @@ function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
+let pendingDirection = 0; // -1 atrás, 0 sin animación, 1 adelante
+
 function render(html) {
+  view.classList.remove("view-fwd", "view-back");
+  if (pendingDirection !== 0) {
+    void view.offsetWidth; // reinicia la animación
+    view.classList.add(pendingDirection > 0 ? "view-fwd" : "view-back");
+  }
+  pendingDirection = 0;
   view.innerHTML = html;
   const h1 = $("h1", view);
   if (h1) { h1.setAttribute("tabindex", "-1"); h1.focus(); }
   updateChrome();
+}
+
+/* Ilustraciones ligeras (SVG inline) — todas variaciones del arco del logo. */
+const ILLOS = {
+  // sin cargas: la trayectoria lista, la carga aún no sale
+  vacio: `<svg viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M 48.97 15.03 A 24 24 0 1 0 56 32" fill="none" stroke="currentColor"
+          stroke-width="3.5" stroke-linecap="round" stroke-dasharray="2 7"/>
+    <circle class="dot" cx="32" cy="32" r="5"/></svg>`,
+  // sin vuelos: el punto espera fuera del arco
+  sinVuelos: `<svg viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M 48.97 15.03 A 24 24 0 1 0 56 32" fill="none" stroke="currentColor"
+          stroke-width="3.5" stroke-linecap="round"/>
+    <circle class="dot" cx="10" cy="10" r="5"/>
+    <path d="M 17 17 L 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="1 5"/></svg>`,
+  // sin conexión: el arco cortado
+  sinConexion: `<svg viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M 48.97 15.03 A 24 24 0 0 0 10 20" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M 12 46 A 24 24 0 0 0 56 32" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+    <circle class="dot" cx="55.9" cy="21.4" r="5.5"/></svg>`,
+  // enlace inválido: el punto con interrogación
+  noEncontrado: `<svg viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M 48.97 15.03 A 24 24 0 1 0 56 32" fill="none" stroke="currentColor"
+          stroke-width="3.5" stroke-linecap="round"/>
+    <text x="32" y="39" text-anchor="middle" font-size="20" font-weight="700" fill="currentColor">?</text></svg>`,
+};
+
+function emptyState(illo, title, body, cta) {
+  return `<div class="empty">${ILLOS[illo]}<h2>${title}</h2><p>${body}</p>
+    ${cta ? `<div class="btnrow" style="justify-content:center">${cta}</div>` : ""}</div>`;
 }
 
 function updateChrome() {
@@ -154,8 +192,10 @@ async function vCargas() {
     <h1>Mis cargas</h1>
     <p class="lead">Aquí están tus envíos. Puedes retomar un registro donde lo dejaste: se guarda solo.</p>
     <ul class="mlist">${rows || ""}</ul>
-    ${!rows ? '<div class="card"><p>Todavía no tienes cargas registradas. ¡Empieza con la primera!</p></div>' : ""}
-    <div class="btnrow"><a class="btn" href="#/nueva">Registrar una carga nueva</a></div>`);
+    ${!rows ? emptyState("vacio", "Tu primera carga te espera",
+        "Registrarla toma unos minutos y tu avance se guarda solo.",
+        '<a class="btn" href="#/nueva">Registrar mi primera carga</a>') : ""}
+    ${rows ? '<div class="btnrow"><a class="btn" href="#/nueva">Registrar una carga nueva</a></div>' : ""}`);
 }
 
 function firstMissingStep(m) {
@@ -483,7 +523,9 @@ async function vOpciones(id) {
   render(`
     <h1>Vuelos disponibles para tu carga</h1>
     <p class="lead">Ordenados por lo que mejor encaja con tu destino. El precio ya incluye tus recargos, si aplican.</p>
-    ${cards || `<div class="card"><p>Por ahora no hay vuelos que encajen con tu destino. Prueba con otra órbita en el paso 3, o escríbenos y te avisamos cuando haya uno.</p></div>`}
+    ${cards || emptyState("sinVuelos", "Por ahora no hay vuelos para tu destino",
+      "Prueba con otra órbita en el paso 3, o escríbenos y te avisamos cuando haya uno.",
+      `<a class="btn ghost" href="#/carga/${id}/paso/3">Cambiar destino</a>`)}
     <div class="btnrow"><a class="btn ghost" href="#/carga/${id}/paso/6">Atrás</a></div>`);
   view.querySelectorAll(".choose").forEach(b => b.addEventListener("click", async () => {
     b.disabled = true;
@@ -551,7 +593,11 @@ async function vReservado(id) {
   const m = await api(`/manifests/${id}`);
   const url = `${location.origin}/#/tracking/${m.tracking_token}`;
   render(`
-    <h1>🎉 ¡Vuelo reservado!</h1>
+    <svg class="celebrate" viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M 48.97 15.03 A 24 24 0 1 0 56 32" fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round"/>
+      <g class="orbit-dot"><circle cx="55.9" cy="21.4" r="6.5" fill="var(--accent)"/></g>
+    </svg>
+    <h1>¡Vuelo reservado!</h1>
     <p class="lead">Tu carga <strong>${esc(m.name)}</strong> tiene lugar asegurado. Te avisaremos de cada paso.</p>
     <h2>Qué sigue</h2>
     <div class="card"><ul class="timeline">
@@ -591,13 +637,40 @@ const FUTURE_WORDS = {
 };
 
 async function vTracking(token) {
-  let t;
+  let t = null, offlineSince = null;
   try {
     t = await api(`/tracking/${token}`);
-  } catch {
-    render(`<h1>No encontramos ese envío</h1><p class="lead">Revisa que el enlace esté completo, o pide uno nuevo a quien te lo compartió.</p>`);
-    return;
+    localStorage.setItem("track:" + token, JSON.stringify({ t, ts: Date.now() }));
+  } catch (err) {
+    if (err && err.status === 404) {
+      render(`<h1>No encontramos ese envío</h1>` + emptyState("noEncontrado", "El enlace no funciona",
+        "Revisa que esté completo, o pide uno nuevo a quien te lo compartió."));
+      return;
+    }
+    // sin red: último estado conocido, con aviso honesto
+    const cached = localStorage.getItem("track:" + token);
+    if (cached) {
+      const saved = JSON.parse(cached);
+      t = saved.t;
+      offlineSince = saved.ts;
+    } else {
+      render(`<h1>Sin conexión</h1>` + emptyState("sinConexion", "No pudimos conectar",
+        "Revisa tu internet y vuelve a intentarlo. El seguimiento funciona sin conexión después de abrirlo una vez."));
+      return;
+    }
   }
+  renderTracking(t, offlineSince);
+}
+
+function hace(ts) {
+  const min = Math.round((Date.now() - ts) / 60000);
+  if (min < 2) return "hace un momento";
+  if (min < 60) return `hace ${min} minutos`;
+  const h = Math.round(min / 60);
+  return h === 1 ? "hace 1 hora" : `hace ${h} horas`;
+}
+
+function renderTracking(t, offlineSince) {
   const done = t.history
     .filter(e => e.event_type !== "manifest.updated")
     .map((e, i, arr) => {
@@ -615,6 +688,7 @@ async function vTracking(token) {
   render(`
     <h1>${esc(t.payload_name)} ${statePill(t.status)}</h1>
     <p class="lead">Destino: órbita ${esc(t.target_orbit_name)} · seguimiento público, sin precios ni datos personales.</p>
+    ${offlineSince ? `<p class="offline-notice">Sin conexión — mostrando el estado de ${hace(offlineSince)}.</p>` : ""}
     <div class="card"><ul class="timeline">${done}${future}</ul></div>
     <details><summary>Ver detalles técnicos</summary>
       <p class="hint">Estado del sistema: <span class="mono">${t.status}</span> · última actualización ${fecha(t.last_updated)}.</p>
@@ -623,9 +697,27 @@ async function vTracking(token) {
 
 /* ── router ──────────────────────────────────────────────────────────── */
 
+// Rango de cada vista para animar la dirección del avance (wizard y flujo).
+function routeRank(parts) {
+  if (parts[0] === "entrar") return 0;
+  if (parts[0] === "nueva") return 11;
+  if (parts[0] === "carga") {
+    if (parts[2] === "paso") return 10 + parseInt(parts[3], 10);
+    if (parts[2] === "opciones") return 20;
+    if (parts[2] === "cotizacion") return 21;
+    if (parts[2] === "reservado") return 22;
+  }
+  return 1; // cargas y tracking: sin dirección fuerte
+}
+
+let lastRank = null;
+
 async function route() {
   const h = location.hash || "#/cargas";
   const parts = h.slice(2).split("/");
+  const rank = routeRank(parts);
+  pendingDirection = lastRank === null || rank === lastRank ? 0 : rank > lastRank ? 1 : -1;
+  lastRank = rank;
   try {
     if (parts[0] === "tracking" && parts[1]) return await vTracking(parts[1]);
     if (!session.token) return vEntrar();
@@ -646,6 +738,12 @@ async function route() {
     if (err && err.status === 401) { session.clear(); return vEntrar(); }
     if (err && err.status === 404) { render(`<h1>No encontramos esa página</h1><p class="lead"><a href="#/cargas">Volver a mis cargas</a></p>`); return; }
     console.error(err);
+    if (err && err.status === undefined) {
+      render(`<h1>Sin conexión</h1>` + emptyState("sinConexion", "No pudimos conectar",
+        "Tus datos guardados están a salvo. Revisa tu internet y vuelve a intentarlo.",
+        '<a class="btn ghost" href="#/cargas">Reintentar</a>'));
+      return;
+    }
     render(`<h1>Algo salió mal</h1><p class="lead">Vuelve a intentarlo en un momento. Si sigue fallando, escríbenos.</p>
       <div class="btnrow"><a class="btn ghost" href="#/cargas">Volver a mis cargas</a></div>`);
   }
@@ -653,3 +751,25 @@ async function route() {
 
 window.addEventListener("hashchange", route);
 route();
+
+/* ── PWA: service worker + instalación no intrusiva ─────────────────── */
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js").catch(() => { /* la app funciona igual sin SW */ });
+}
+
+let installEvent = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  if (localStorage.getItem("install-dismissed")) return;
+  installEvent = e;
+  $("#install-banner").hidden = false;
+});
+$("#install-yes").addEventListener("click", async () => {
+  $("#install-banner").hidden = true;
+  if (installEvent) { installEvent.prompt(); installEvent = null; }
+});
+$("#install-no").addEventListener("click", () => {
+  $("#install-banner").hidden = true;
+  localStorage.setItem("install-dismissed", "1");
+});

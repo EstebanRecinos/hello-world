@@ -179,6 +179,15 @@ SPA sin framework (HTML + CSS + JS vanilla) servida por el propio FastAPI en `/`
 
 Decisiones de diseño: la "sesión" usa el emisor dev de tokens (se reemplaza por cuentas/IdP en la fase de publicación); los errores 409 del backend se traducen a acciones ("Ese precio ya venció. Te mostramos las opciones con el precio de hoy") y `missing_fields` lleva al usuario directo al paso que le falta.
 
+### Identidad y sistema de diseño (`design/`)
+
+- **`design/BRAND.md`** — identidad completa: isotipo "el waypoint" (arco de trayectoria + punto ámbar, `web/img/logo.svg`), paleta "bitácora de rampa", tipografía de sistema (sin webfonts, por diseño), tono de voz y los 5 principios del producto.
+- **`design/tokens.json`** — design tokens en formato W3C: única fuente de verdad de color (claro/oscuro), espaciado, radios, tipografía y movimiento. El CSS se regenera con `python -m scripts.gen_tokens`; la futura app nativa consume el mismo JSON (ver `design/HANDOFF.md`).
+- **Catálogo vivo en `/design`** — cada componente con sus estados, corriendo sobre los tokens reales, con toggle de tema.
+- **PWA instalable** — `manifest.json` + service worker (`web/sw.js`): el shell abre sin conexión y el tracking muestra el último estado conocido con aviso honesto ("Sin conexión — mostrando el estado de hace X"); las escrituras requieren red, sin colas engañosas. Banner de instalación no intrusivo y descartable.
+- **Movimiento con propósito** — 3 tokens (`120/200/280ms`): transición direccional del wizard, pop del hito nuevo, y una sola celebración (el punto recorre el arco al reservar). Todo muere con `prefers-reduced-motion`.
+- **Estados vacíos/error ilustrados** — 4 SVG inline, variaciones del arco del logo, cada uno con siguiente paso claro.
+
 ## Flujo completo con curl
 
 ```bash

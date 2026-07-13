@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ORBITA-LINK">
+  <!-- El waypoint: un arco de trayectoria con la carga (punto ámbar) saliendo por él. -->
+  <path d="M 48.97 15.03 A 24 24 0 1 0 56 32"
+        fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round"/>
+  <circle cx="55.9" cy="21.4" r="6.5" fill="#F0A32B"/>
+</svg>

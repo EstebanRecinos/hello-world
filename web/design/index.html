@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>ORBITA-LINK — Sistema de diseño</title>
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/tokens.css">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .ds-section { margin-bottom: 48px; }
+    .ds-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+    .ds-swatch { border: 1px solid var(--line); border-radius: var(--radius-card); overflow: hidden; }
+    .ds-swatch .c { height: 56px; }
+    .ds-swatch .n { padding: 8px 12px; font-size: .8rem; }
+    .ds-swatch .n b { display: block; font-family: var(--font-data); }
+    .ds-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin: 12px 0; }
+    .ds-note { font-size: .85rem; color: var(--muted); }
+    .ds-logo { display: flex; gap: 32px; align-items: center; flex-wrap: wrap; }
+    .ds-logo svg { color: var(--ink); }
+    table.ds { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    table.ds td, table.ds th { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+    table.ds code { font-family: var(--font-data); font-size: .85em; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a href="/" class="wordmark">
+      <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M 48.97 15.03 A 24 24 0 1 0 56 32" fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round"/>
+        <circle cx="55.9" cy="21.4" r="6.5" fill="var(--accent)"/>
+      </svg>
+      ORBITA<b>—</b>LINK
+    </a>
+    <nav><button class="linkbtn" id="theme-toggle" type="button">Cambiar tema</button></nav>
+  </header>
+
+  <main style="max-width: 860px">
+    <h1>Sistema de diseño</h1>
+    <p class="lead">Catálogo vivo. La fuente de verdad es <code>design/tokens.json</code>; este CSS se genera con <code>python -m scripts.gen_tokens</code>. Identidad completa en <code>design/BRAND.md</code>.</p>
+
+    <section class="ds-section">
+      <h2>Isotipo — “el waypoint”</h2>
+      <div class="ds-logo">
+        <svg width="128" height="128" viewBox="0 0 64 64"><path d="M 48.97 15.03 A 24 24 0 1 0 56 32" fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round"/><circle cx="55.9" cy="21.4" r="6.5" fill="var(--accent)"/></svg>
+        <svg width="48" height="48" viewBox="0 0 64 64"><path d="M 48.97 15.03 A 24 24 0 1 0 56 32" fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round"/><circle cx="55.9" cy="21.4" r="6.5" fill="var(--accent)"/></svg>
+        <svg width="16" height="16" viewBox="0 0 64 64"><path d="M 48.97 15.03 A 24 24 0 1 0 56 32" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/><circle cx="55.9" cy="21.4" r="8" fill="var(--accent)"/></svg>
+      </div>
+      <p class="ds-note">Un arco de trayectoria y la carga (punto ámbar) saliendo por él. Monocromo + un solo color. A 16px el trazo y el punto crecen para conservar la lectura.</p>
+    </section>
+
+    <section class="ds-section">
+      <h2>Color — “bitácora de rampa”</h2>
+      <div class="ds-swatches" id="swatches"></div>
+      <p class="ds-note">Todos los pares texto/fondo se validan a ≥ 4.5:1 en ambos temas (ratios documentados en <code>tokens.json</code>). El azul de foco es exclusivo del anillo de foco.</p>
+    </section>
+
+    <section class="ds-section">
+      <h2>Tipografía</h2>
+      <p style="font-size: var(--text-display); font-weight: 650; margin: 4px 0">Display 1.45rem / 650 — títulos de vista</p>
+      <p style="font-size: var(--text-section); font-weight: 650; margin: 4px 0">Sección 1.1rem / 650</p>
+      <p style="font-size: var(--text-body); margin: 4px 0">Cuerpo 1rem / 400 — nunca menor a 16px, líneas ≤ 65 caracteres</p>
+      <p class="hint" style="margin: 4px 0">Pista 0.9rem — explicaciones bajo cada campo</p>
+      <p class="mono" style="font-size: var(--text-data); font-weight: 650; text-transform: uppercase; letter-spacing: .08em; margin: 4px 0">Dato 0.8rem / 650 — pills y etiquetas</p>
+      <p class="mono">Monoespaciada para datos: $93,600 · 97.5° · 550 km (números tabulares alinean solos)</p>
+    </section>
+
+    <section class="ds-section">
+      <h2>Botones</h2>
+      <div class="ds-row">
+        <button class="btn" type="button">Primario</button>
+        <button class="btn ghost" type="button">Secundario</button>
+        <button class="btn" type="button" disabled>Deshabilitado</button>
+        <button class="linkbtn" type="button">Enlace</button>
+      </div>
+      <p class="ds-note">Altura mínima 48px (token <code>size.control</code>). El foco siempre dibuja el anillo azul: pruébalo con Tab.</p>
+    </section>
+
+    <section class="ds-section">
+      <h2>Pills de estado</h2>
+      <div class="ds-row">
+        <span class="pill">Borrador</span>
+        <span class="pill acc">Con precio</span>
+        <span class="pill ok">Reservado</span>
+        <span class="pill warn">Cancelado</span>
+      </div>
+      <p class="ds-note">El estado siempre en palabras humanas. Verde = hecho consumado; ámbar = requiere tu acción; rojo = bloqueo.</p>
+    </section>
+
+    <section class="ds-section">
+      <h2>Tarjeta de opción</h2>
+      <div class="optcards" style="max-width: 480px">
+        <label class="optcard"><input type="radio" name="ds-demo" checked>
+          <span><span class="t">📷 Para tomar fotos de la Tierra</span><br>
+          <span class="d">Pasa sobre cada lugar a la misma hora del día.</span></span></label>
+        <label class="optcard"><input type="radio" name="ds-demo">
+          <span><span class="t">🌍 Cerca de la Tierra</span><br>
+          <span class="d">La opción más común y barata.</span></span></label>
+      </div>
+    </section>
+
+    <section class="ds-section">
+      <h2>Respuesta tri-estado</h2>
+      <div class="seg">
+        <label><input type="radio" name="ds-tri"> Sí</label>
+        <label><input type="radio" name="ds-tri" checked> No</label>
+        <label><input type="radio" name="ds-tri"> No estoy segura/o</label>
+      </div>
+      <p class="ds-note">“No estoy segura/o” es una respuesta de primera clase: nunca bloquea, deriva a revisión humana.</p>
+    </section>
+
+    <section class="ds-section">
+      <h2>Campo con error</h2>
+      <div class="field" style="max-width: 380px">
+        <label for="ds-kg">Peso, en kilogramos</label>
+        <input id="ds-kg" type="number" value="740">
+        <p class="field-error">Ese peso supera los 500 kg de este servicio. Si tu carga pesa más, escríbenos y te conectamos con un lanzamiento dedicado.</p>
+      </div>
+      <p class="ds-note">El error siempre dice qué pasó y qué hacer — nunca solo “valor inválido”.</p>
+    </section>
+
+    <section class="ds-section">
+      <h2>Línea de trayectoria (timeline)</h2>
+      <div class="card" style="max-width: 420px"><ul class="timeline">
+        <li><div><div class="ev">Recibimos tu registro</div><div class="ts">12 de julio</div></div></li>
+        <li class="now"><div><div class="ev">Vuelo reservado</div><div class="ts">12 de julio</div></div></li>
+        <li class="future"><div><div class="ev">Despegue</div></div></li>
+      </ul></div>
+      <p class="ds-note">El componente central del producto: verde = pasado, ámbar = estás aquí, gris = por venir.</p>
+    </section>
+
+    <section class="ds-section">
+      <h2>Progreso del wizard</h2>
+      <div class="progress" style="max-width: 420px">
+        <div class="bar" role="progressbar" aria-valuenow="4" aria-valuemin="1" aria-valuemax="6" aria-label="Paso 4 de 6"><i style="width:66.7%"></i></div>
+        <span class="label">Paso 4 de 6</span>
+      </div>
+    </section>
+
+    <section class="ds-section">
+      <h2>Movimiento</h2>
+      <table class="ds">
+        <tr><th>Token</th><th>Valor</th><th>Uso</th></tr>
+        <tr><td><code>motion.quick</code></td><td>120ms</td><td>Hover y foco</td></tr>
+        <tr><td><code>motion.step</code></td><td>200ms</td><td>Transición direccional entre pasos del wizard</td></tr>
+        <tr><td><code>motion.moment</code></td><td>280ms</td><td>Único momento celebratorio: reserva confirmada</td></tr>
+      </table>
+      <p class="ds-note">Todo bajo 300ms; todo desactivado con <code>prefers-reduced-motion</code>.</p>
+    </section>
+  </main>
+
+  <footer class="foot"><p><a href="/">← Volver al portal</a></p></footer>
+
+  <script>
+    // Swatches generados desde las variables reales (lo que ves es lo que corre).
+    const names = ["ink","paper","surface","line","muted","accent","accent-soft","ok","ok-soft","warn","warn-soft","chip","focus"];
+    const roles = { ink: "Tinta de bitácora", paper: "Papel técnico", surface: "Superficie", line: "Líneas",
+      muted: "Texto secundario", accent: "Ámbar de rampa", "accent-soft": "Fondo del acento", ok: "Verde de confirmación",
+      "ok-soft": "Fondo verde", warn: "Rojo de aviso", "warn-soft": "Fondo rojo", chip: "Chip", focus: "Azul de foco" };
+    const grid = document.getElementById("swatches");
+    function paint() {
+      const cs = getComputedStyle(document.documentElement);
+      grid.innerHTML = names.map(n => {
+        const v = cs.getPropertyValue("--" + n).trim();
+        return `<div class="ds-swatch"><div class="c" style="background:${v}"></div>
+          <div class="n"><b>color.${n}</b>${roles[n]}<br><span class="mono">${v}</span></div></div>`;
+      }).join("");
+    }
+    paint();
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+      const r = document.documentElement;
+      const dark = r.dataset.theme === "dark" || (!r.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
+      r.dataset.theme = dark ? "light" : "dark";
+      paint();
+    });
+  </script>
+</body>
+</html>

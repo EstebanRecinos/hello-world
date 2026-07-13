@@ -1,0 +1,91 @@
+/* GENERATED from design/tokens.json — do not edit by hand. */
+
+:root {
+  --ink: #16202E;
+  --paper: #F4F6FA;
+  --surface: #FFFFFF;
+  --line: #C8D1DE;
+  --muted: #4D5B70;
+  --accent: #8A5F00;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #F5EAD0;
+  --ok: #166339;
+  --ok-soft: #DDEFE5;
+  --warn: #A03C32;
+  --warn-soft: #F6E2E0;
+  --chip: #E6EAF2;
+  --focus: #1857C3;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --radius-control: 8px;
+  --radius-card: 10px;
+  --radius-pill: 999px;
+  --size-target: 44px;
+  --size-control: 48px;
+  --font-data: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+  --font-text: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --text-display: 1.45rem;
+  --text-section: 1.1rem;
+  --text-body: 1rem;
+  --text-hint: 0.9rem;
+  --text-data: 0.8rem;
+  --motion-quick: 120ms;
+  --motion-step: 200ms;
+  --motion-moment: 280ms;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #E8EDF6;
+    --paper: #0D1526;
+    --surface: #16203A;
+    --line: #33415E;
+    --muted: #9AA7BD;
+    --accent: #F0A32B;
+    --accent-ink: #14100A;
+    --accent-soft: #2B2413;
+    --ok: #57CF90;
+    --ok-soft: #14301F;
+    --warn: #F08A7E;
+    --warn-soft: #331A17;
+    --chip: #202C47;
+    --focus: #7FB2FF;
+  }
+}
+:root[data-theme="dark"] {
+  --ink: #E8EDF6;
+  --paper: #0D1526;
+  --surface: #16203A;
+  --line: #33415E;
+  --muted: #9AA7BD;
+  --accent: #F0A32B;
+  --accent-ink: #14100A;
+  --accent-soft: #2B2413;
+  --ok: #57CF90;
+  --ok-soft: #14301F;
+  --warn: #F08A7E;
+  --warn-soft: #331A17;
+  --chip: #202C47;
+  --focus: #7FB2FF;
+}
+:root[data-theme="light"] {
+  --ink: #16202E;
+  --paper: #F4F6FA;
+  --surface: #FFFFFF;
+  --line: #C8D1DE;
+  --muted: #4D5B70;
+  --accent: #8A5F00;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #F5EAD0;
+  --ok: #166339;
+  --ok-soft: #DDEFE5;
+  --warn: #A03C32;
+  --warn-soft: #F6E2E0;
+  --chip: #E6EAF2;
+  --focus: #1857C3;
+}
