@@ -61,7 +61,8 @@ input[type="text"], input[type="number"] {
   color: var(--ink); background: var(--surface);
   border: 1.5px solid var(--line); border-radius: 8px;
 }
-input:invalid { border-color: var(--warn); }
+/* Solo marca error tras interacción del usuario — nunca en un campo recién abierto. */
+input:user-invalid { border-color: var(--warn); }
 .field { margin-bottom: 18px; }
 .field-error { color: var(--warn); font-size: .9rem; margin-top: 6px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
